@@ -27,9 +27,8 @@ Output/
 .env
 .env.*
 
+# jupyter
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 __pycache__/*
-
-
 
