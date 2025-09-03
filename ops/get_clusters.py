@@ -27,9 +27,22 @@ def get_clusters(X, y, K=1, cluster_dir="./checkpoint/data/clusters/", seed=42):
         result[label] = kmeans.cluster_centers_
     return result
 
+def load_clusters(checkpoint_dir="./checkpoint/", split="train"):
+    clusters_dir = os.path.join(checkpoint_dir, "clusters", f"{split}/")
+    if not os.path.exists(clusters_dir):
+        return None
+    result = {}
+    for file in os.listdir(clusters_dir):
+        if file.startswith("."):
+            continue
+        if os.path.isdir(os.path.join(clusters_dir, file)):
+            result[file] = np.load(os.path.join(clusters_dir, file, "centroid.npy"))
+    return result
+
+
 def main(data_dir, K=1, checkpoint_dir="./checkpoint/", seed=42, splits=["train", "val", "test"]):
     for split in splits:
         X, y = load_data(data_dir, split=split)
-        clusters_checkpoint_dir = os.path.join(checkpoint_dir, "clusters", f"{split}/")
-        os.makedirs(clusters_checkpoint_dir, exist_ok=True)
-        get_clusters(X, y, K, clusters_checkpoint_dir, seed)
+        clusters_dir = os.path.join(checkpoint_dir, "clusters", f"{split}/")
+        os.makedirs(clusters_dir, exist_ok=True)
+        get_clusters(X, y, K, clusters_dir, seed)

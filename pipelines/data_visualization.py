@@ -1,6 +1,6 @@
 import os
 from utils import load_data
-from ops import get_pca
+from ops import get_pca, load_clusters
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -66,6 +66,53 @@ def get_joint_pca_plot(X_source, y_source, X_target, y_target, pca, split, resul
 
     plt.close()
 
+def get_pca_plot_with_centroids(X, y, pca, clusters, split, domain, results_dir):
+    X_pca = pca.transform(X)
+
+    unique_labels = np.unique(y)
+    palette = sns.color_palette("viridis", n_colors=max(3, len(unique_labels)))
+    palette_map = {lbl: palette[idx % len(palette)] for idx, lbl in enumerate(unique_labels)}
+
+    fig = plt.figure(figsize=(8, 6))
+    sns.scatterplot(x=X_pca[:, 0], y=X_pca[:, 1], hue=y, style=y, palette=palette_map, alpha=0.7, s=20)
+
+    for cls_key, centroid_vec in clusters.items():
+        try:
+            centroid_arr = np.asarray(centroid_vec)
+            if centroid_arr.ndim == 1:
+                centroid_arr = centroid_arr.reshape(1, -1)
+            centroid_pca = pca.transform(centroid_arr)
+
+            try:
+                cls_as_num = type(unique_labels[0])(int(cls_key))
+            except Exception:
+                cls_as_num = cls_key
+            color = palette_map.get(cls_as_num, "red")
+
+            plt.scatter(
+                centroid_pca[:, 0],
+                centroid_pca[:, 1],
+                c=[color],
+                marker="X",
+                s=160,
+                edgecolors="black",
+                linewidths=1.2,
+                label=f"centroid {cls_key}",
+            )
+        except Exception:
+            continue
+
+    plt.title(f"PCA Plot with Centroids - {domain} {split}")
+    plt.xlabel("Principal Component 1")
+    plt.ylabel("Principal Component 2")
+    plt.legend(title="Class / Centroid", loc="best")
+    plt.tight_layout()
+    save_dir = os.path.join(results_dir, domain, f"{split}/")
+    os.makedirs(save_dir, exist_ok=True)
+    fig.savefig(os.path.join(save_dir, "pca_centroids.png"))
+
+    plt.close()
+
 def main(source_dir, target_dir, checkpoint_dir="./checkpoint/", results_dir="./results/", splits=["train", "val", "test"]):
     for split in splits:
         X_source, y_source = load_data(source_dir, split=split)
@@ -77,3 +124,7 @@ def main(source_dir, target_dir, checkpoint_dir="./checkpoint/", results_dir="./
         
         get_joint_pca_plot(X_source, y_source, X_target, y_target, pca, split, results_dir)
 
+        clusters = load_clusters(checkpoint_dir, split)
+        if clusters is not None:
+            get_pca_plot_with_centroids(X_source, y_source, pca, clusters, split, "source", results_dir)
+            get_pca_plot_with_centroids(X_target, y_target, pca, clusters, split, "target", results_dir)
