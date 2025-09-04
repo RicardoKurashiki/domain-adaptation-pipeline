@@ -4,7 +4,7 @@ import argparse
 import tensorflow as tf
 
 from ops import get_clusters, get_pca
-from pipelines import view_data
+from pipelines import view_data, train_cluster_ae, validate_pipeline
 
 parser = argparse.ArgumentParser(prog="Domain Transfer Model Pipeline")
 
@@ -57,6 +57,11 @@ def main():
     get_pca(source_dir, 2, checkpoint_dir, "test")
 
     view_data(source_dir, target_dir, checkpoint_dir, results_dir)
+    # output_path = train_cluster_ae(source_dir, target_dir, checkpoint_dir, results_dir, epochs, batch_size)
+
+    # validate_pipeline(source_dir, output_path, model_dir, checkpoint_dir, results_dir)
+    validate_pipeline(source_dir, os.path.join(results_dir, "cluster_ae/"), model_dir, checkpoint_dir, results_dir)
+
 
 if __name__ == "__main__":
     main()
